@@ -1,0 +1,16 @@
+#!/bin/sh
+# busybox udhcpc betigi: IP, varsayilan yol ve DNS (her sunucu ayri satir)
+case "$1" in
+	deconfig)
+		ifconfig $interface 0.0.0.0
+		;;
+	bound|renew)
+		ifconfig $interface $ip netmask $subnet
+		route del default 2>/dev/null
+		[ -n "$router" ] && route add default gw ${router%% *}
+		: > /etc/resolv.conf
+		for d in $dns; do echo "nameserver $d" >> /etc/resolv.conf; done
+		echo "[udhcpc] $interface $ip gw $router dns $dns" > /dev/kmsg
+		;;
+esac
+exit 0

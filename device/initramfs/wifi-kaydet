@@ -1,0 +1,10 @@
+#!/bin/sh
+# wifi-kaydet <ssid> <sifre>: Wi-Fi bilgisini kalici "data" bolumune yazar (/data/wifi/wpa.conf, 600) ve baglanir.
+[ -n "$2" ] || { echo "kullanim: wifi-kaydet <ssid> <sifre>"; exit 2; }
+mountpoint -q /data || { echo "/data bagli degil"; exit 1; }
+mkdir -p /data/wifi
+umask 077
+printf 'ctrl_interface=/var/run/wpa_supplicant\nnetwork={\n\tssid="%s"\n\tpsk="%s"\n\tkey_mgmt=WPA-PSK\n}\n' "$1" "$2" > /data/wifi/wpa.conf
+sync
+echo "kaydedildi: ssid=$1"
+wifi-baslat -f

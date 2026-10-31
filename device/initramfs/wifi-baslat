@@ -1,0 +1,25 @@
+#!/bin/sh
+# wifi-baslat: /data/wifi/wpa.conf varsa kayitli aga baglanir (init arka planda cagirir).
+# Guc korumasi: radyo acilisi yalniz PC USB beslemesinde cihazi resetliyor (11.10.2026). Deneme oncesi
+# /data/.wifi-deneme isareti yazilir, 30 sn sorunsuz calisinca silinir. Acilista isaret varsa onceki deneme
+# cokmus demektir: bu acilista Wi-Fi atlanir, isaret silinir (bir sonraki acilis yeniden dener).
+C=/data/wifi/wpa.conf
+M=/data/.wifi-deneme
+K() { echo "[wifi] $*" > /dev/kmsg; }
+[ -f $C ] || { K "kayitli ag yok ($C)"; exit 0; }
+if [ -e $M ]; then
+	rm -f $M; sync
+	K "onceki Wi-Fi denemesi cokmus (guc?) -> bu acilista atlandi. Elle: wifi-baslat"
+	[ "$1" = "-f" ] || exit 0
+fi
+echo "$(cat /proc/uptime)" > $M; sync
+lsmod | grep -q '^ssv6x5x' || insmod /lib/wifi/ssv6006.ko
+for i in 1 2 3 4 5 6 7 8; do [ -e /sys/class/net/wlan0 ] && break; sleep 1; done
+ip link set wlan0 up || { K "wlan0 yok"; exit 1; }
+mkdir -p /var/run
+killall wpa_supplicant 2>/dev/null
+wpa_supplicant -B -D nl80211 -i wlan0 -c $C
+udhcpc -b -i wlan0 -s /usr/share/udhcpc/default.script -p /var/run/udhcpc.wlan0.pid >/dev/null 2>&1
+K "baglaniyor: $(grep -m1 ssid= $C | tr -d ' \t')"
+( sleep 30; rm -f $M; sync; K "Wi-Fi 30 sn sorunsuz, guc isareti silindi: $(ip -4 addr show wlan0 | grep -o 'inet [0-9.]*')"
+  ntpd -q -p time.google.com -p pool.ntp.org >/dev/null 2>&1 && K "saat NTP ile ayarlandi: $(date)" ) &

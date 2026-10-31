@@ -1,0 +1,17 @@
+diff --git a/ipn/ipnlocal/watchdog.go b/ipn/ipnlocal/watchdog.go
+index 2dd7b41..ddbb190 100644
+--- a/ipn/ipnlocal/watchdog.go
++++ b/ipn/ipnlocal/watchdog.go
+@@ -142,8 +142,10 @@ func (b *LocalBackend) reportDeadlock() {
+ 	if logf == nil {
+ 		logf = log.Printf
+ 	}
+-	logf("ipnlocal watchdog goroutine stacks:\n%s", goroutineStacks())
+-	panic("ipnlocal: watchdog timeout")
++	// VeLinux KOLE (14.10.2026): tek cekirdekli, takas kullanan 64 MB cihazda kilitler 30 sn'yi asabiliyor;
++	// bekci sureci oldurmesin, yalniz kisa bir satir yazsin (256 KB goroutine dokumu SD'ye yazilmasin).
++	logf("ipnlocal watchdog: kilit 30 sn'den uzun bekledi (yavas cihaz); panik devre disi (VeLinux yamasi)")
++	_ = goroutineStacks
+ }
+ 
+ func goroutineStacks() []byte {

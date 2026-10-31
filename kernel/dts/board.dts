@@ -1,0 +1,381 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * F133-B (D1s) 10.26" masaustu panel karti (312-06001-02) - RAM'den acilis (adim 1).
+ * Kaynak degerler: outputs\linux-ram-test\melis-config.fex (script.bin dokumu).
+ * Taban: Tina linux-5.4 sun20iw1p1.dtsi + F133 evb1 board.dts bicimi.
+ *
+ * Adim 1 kurallari: SPI NOR KAPALI (flash'a hicbir yol yok), DVFS yok.
+ */
+
+/dts-v1/;
+
+#include "sun20iw1p1.dtsi"
+
+/ {
+	model = "F133 10.26in desktop panel";
+	/* "allwinner,sun20i-d1": upstream OpenSBI'nin D1 platform kodunu secmesi icin */
+	compatible = "allwinner,d1s", "allwinner,sun20i-d1", "arm,sun20iw1p1", "allwinner,sun20iw1p1";
+
+	chosen {
+		/* initramfs kernel'e gomulu; Tina dtsi'deki harici initrd adresleri silinir */
+		/delete-property/ linux,initrd-start;
+		/delete-property/ linux,initrd-end;
+		bootargs = "clk_ignore_unused ignore_loglevel fbcon=rotate:1 console=tty0 loglevel=8 rdinit=/init cma=12M";
+		stdout-path = "serial4:115200n8";
+	};
+
+	/*
+	 * 0x40000000-0x401FFFFF: OpenSBI (0x40000000).
+	 * Linux 5.4 kernel yukleme adresinin (0x40200000) altini memblock'tan cikarmiyor; burada no-map ile ayrilir.
+	 */
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		sbi_and_log@40000000 {
+			reg = <0x0 0x40000000 0x0 0x200000>;
+			no-map;
+		};
+
+		/* OpenSBI hata ayiklama RAM gunlugu (03_patch_opensbi_debug_v2.py) */
+		f133_ramlog@43c00000 {
+			reg = <0x0 0x43c00000 0x0 0x100000>;
+			no-map;
+		};
+	};
+};
+
+/*
+ * Upstream OpenSBI icin: Tina dtsi'de CLINT yok, PLIC yalniz "riscv,plic0".
+ * Linux 5.4 bu CLINT dugumunu kullanmaz (zamanlayici SBI uzerinden), PLIC'i "riscv,plic0" ile eslesir.
+ */
+&soc {
+	clint: timer@14000000 {
+		compatible = "allwinner,sun20i-d1-clint", "thead,c900-clint";
+		reg = <0x0 0x14000000 0x0 0xc000>;
+		interrupts-extended = <&CPU0_intc 3>, <&CPU0_intc 7>;
+	};
+};
+
+&plic0 {
+	compatible = "thead,c900-plic", "riscv,plic0";
+};
+
+/* 64 MB DDR2 (xfel alias testiyle dogrulandi) */
+&{/memory@40000000} {
+	reg = <0x0 0x40000000 0x0 0x4000000>;
+};
+
+/* DVFS yok: PWM regulatoru tanimsiz, OPP tablosu kullanilmaz */
+&CPU0 {
+	/delete-property/ operating-points-v2;
+};
+
+&pio {
+	/* UART4 yalniz TX (PB2). PB3 = lcd_avdd oldugu icin RX baglanmaz. */
+	uart4_pins_a: uart4_pins@0 {
+		pins = "PB2";
+		function = "uart4";
+		drive-strength = <10>;
+		bias-pull-up;
+	};
+	uart4_pins_b: uart4_pins@1 {
+		pins = "PB2";
+		function = "gpio_in";
+	};
+
+	twi1_pins_a: twi1@0 {
+		pins = "PE0", "PE1";		/* SCL, SDA; dis pull-up var */
+		function = "twi1";
+		drive-strength = <10>;
+	};
+	twi1_pins_b: twi1@1 {
+		pins = "PE0", "PE1";
+		function = "gpio_in";
+	};
+
+	sdc1_pins_a: sdc1@0 {
+		pins = "PG0", "PG1", "PG2", "PG3", "PG4", "PG5";
+		function = "sdc1";
+		drive-strength = <30>;
+		bias-pull-up;
+	};
+	sdc1_pins_b: sdc1@1 {
+		pins = "PG0", "PG1", "PG2", "PG3", "PG4", "PG5";
+		function = "gpio_in";
+	};
+
+	/* sdc0 = SD kart yuvasi (fex [sdc0], algilama PF6) */
+	sdc0_pins_a: sdc0@0 {
+		pins = "PF0", "PF1", "PF2", "PF3", "PF4", "PF5";
+		function = "sdc0";
+		drive-strength = <30>;
+		bias-pull-up;
+		power-source = <3300>;
+	};
+	sdc0_pins_b: sdc0@1 {
+		pins = "PF0", "PF1", "PF2", "PF3", "PF4", "PF5";
+		function = "sdc0";
+		drive-strength = <30>;
+		bias-pull-up;
+		power-source = <1800>;
+	};
+	sdc0_pins_c: sdc0@2 {
+		pins = "PF0", "PF1", "PF2", "PF3", "PF4", "PF5";
+		function = "gpio_in";
+	};
+	sdc0_pins_d: sdc0@3 {
+		pins = "PF2", "PF4";
+		function = "uart0";
+		drive-strength = <10>;
+		bias-pull-up;
+	};
+	sdc0_pins_e: sdc0@4 {
+		pins = "PF0", "PF1", "PF3", "PF5";
+		function = "jtag";
+		drive-strength = <10>;
+		bias-pull-up;
+	};
+
+	/* sdc2 kullanilmiyor (PC2-PC7 = SPI NOR), yalniz dtsi referanslari icin */
+	sdc2_pins_a: sdc2@0 {
+		pins = "PC2", "PC3", "PC4", "PC5", "PC6", "PC7";
+		function = "sdc2";
+		drive-strength = <30>;
+		bias-pull-up;
+	};
+	sdc2_pins_b: sdc2@1 {
+		pins = "PC2", "PC3", "PC4", "PC5", "PC6", "PC7";
+		function = "gpio_in";
+	};
+
+	pwm7_pin_a: pwm7@0 {
+		pins = "PD22";
+		function = "pwm7";
+		drive-strength = <10>;
+		bias-pull-up;
+	};
+	pwm7_pin_b: pwm7@1 {
+		pins = "PD22";
+		function = "gpio_in";
+	};
+};
+
+&uart0 {
+	status = "disabled";
+};
+
+&uart4 {
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&uart4_pins_a>;
+	pinctrl-1 = <&uart4_pins_b>;
+	status = "okay";
+};
+
+/* ---- Ekran: sunxi disp2 + MIPI-DSI ---- */
+&disp {
+	disp_init_enable         = <1>;
+	disp_mode                = <0>;
+
+	screen0_output_type      = <1>;	/* LCD */
+	screen0_output_mode      = <4>;
+
+	screen1_output_type      = <0>;
+	screen1_output_mode      = <4>;
+
+	dev0_output_type         = <1>;
+	dev0_output_mode         = <4>;
+	dev0_screen_id           = <0>;
+	dev0_do_hpd              = <0>;
+
+	def_output_dev           = <0>;
+
+	disp_rotation_used       = <0>;	/* 600x1600 dikey; yatay cevirme kullanici alaninda */
+	fb0_format               = <0>;	/* ARGB8888 */
+	fb0_buffer_num           = <1>;	/* tek tampon: 600*1600*4 = 3.84 MB CMA */
+	fb1_format               = <0>;
+	fb1_width                = <0>;
+	fb1_height               = <0>;
+	chn_cfg_mode             = <1>;
+
+	disp_para_zone           = <1>;
+};
+
+&lcd0 {
+	lcd_used               = <1>;
+	lcd_driver_name        = "he0801a068";
+	lcd_backlight          = <50>;
+	lcd_if                 = <4>;	/* DSI */
+	lcd_x                  = <600>;
+	lcd_y                  = <1600>;
+	lcd_width              = <150>;
+	lcd_height             = <94>;
+	lcd_dclk_freq          = <60>;
+
+	lcd_pwm_used           = <1>;
+	lcd_pwm_ch             = <7>;
+	lcd_pwm_freq           = <50000>;
+	lcd_pwm_pol            = <1>;
+	lcd_pwm_max_limit      = <255>;
+
+	lcd_hbp                = <58>;
+	lcd_ht                 = <724>;
+	lcd_hspw               = <8>;
+	lcd_vbp                = <16>;
+	lcd_vt                 = <1636>;
+	lcd_vspw               = <4>;
+
+	lcd_dsi_if             = <0>;	/* video mode */
+	lcd_dsi_lane           = <4>;
+	lcd_dsi_format         = <0>;
+	lcd_dsi_te             = <0>;
+	lcd_frm                = <0>;
+	lcd_io_phase           = <0x0000>;
+	lcd_gamma_en           = <0>;
+	lcd_bright_curve_en    = <0>;
+	lcd_cmap_en            = <0>;
+	lcd_rb_swap            = <0>;
+	deu_mode               = <0>;
+	lcdgamma4iep           = <22>;
+	smart_color            = <90>;
+
+	lcd_bl_en              = <&pio PG 15 GPIO_ACTIVE_HIGH>;
+	lcd_gpio_0             = <&pio PE 9 GPIO_ACTIVE_HIGH>;	/* lcd_reset */
+	lcd_gpio_1             = <&pio PD 19 GPIO_ACTIVE_HIGH>;	/* lcd_power */
+	lcd_gpio_2             = <&pio PB 3 GPIO_ACTIVE_HIGH>;	/* lcd_avdd */
+
+	pinctrl-0 = <&dsi4lane_pins_a>;
+	pinctrl-1 = <&dsi4lane_pins_b>;
+};
+
+/* Arka isik PWM7 = PD22 */
+&pwm7 {
+	pinctrl-names = "active", "sleep";
+	pinctrl-0 = <&pwm7_pin_a>;
+	pinctrl-1 = <&pwm7_pin_b>;
+	status = "okay";
+};
+
+/* ---- Dokunmatik: Goodix GT913 ----
+ * 24. deneme: Tina TWI1 denetleyicisi PE0/PE1'de "engine-mode: xfer timeout" veriyor (NACK degil, hat calismiyor).
+ * FEL'de ayni pinler GPIO bit-bang ile 0x14'te yanit vermisti -> i2c-gpio kullanilir, TWI1 kapali.
+ */
+&twi1 {
+	status = "disabled";
+};
+
+/ {
+	i2c_touch: i2c-gpio-touch {
+		compatible = "i2c-gpio";
+		sda-gpios = <&pio PE 1 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+		scl-gpios = <&pio PE 0 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+		i2c-gpio,delay-us = <5>;	/* ~100 kHz */
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		touchscreen@14 {
+			compatible = "goodix,gt911";
+			reg = <0x14>;
+			interrupt-parent = <&pio>;
+			interrupts = <PE 10 IRQ_TYPE_EDGE_FALLING>;
+			irq-gpios = <&pio PE 10 GPIO_ACTIVE_HIGH>;
+			reset-gpios = <&pio PG 8 GPIO_ACTIVE_HIGH>;
+			touchscreen-inverted-x;
+		};
+	};
+};
+
+/* ---- Wi-Fi: SV6256P @ SDIO sdc1 (ssv6x5x, kernel disi modul) ---- */
+&sdc1 {
+	bus-width = <4>;
+	no-mmc;
+	no-sd;
+	non-removable;
+	cap-sd-highspeed;
+	cap-sdio-irq;
+	keep-power-in-suspend;
+	ignore-pm-notify;
+	max-frequency = <50000000>;
+	status = "okay";
+};
+
+/* ---- SD kart yuvasi (FEL kurtarma karti takili; yalniz okunacak) ---- */
+&sdc0 {
+	bus-width = <4>;
+	cd-gpios = <&pio PF 6 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+	cd-used-24M;
+	cap-sd-highspeed;
+	no-sdio;
+	no-mmc;
+	max-frequency = <50000000>;
+	ctl-spec-caps = <0x8>;
+	/* 7. deneme sonrasi: Linux SD karti baslatinca watchdog reset sonrasi BROM FEL kartini okuyamiyor olabilir */
+	status = "disabled";
+};
+
+&sdc2 {
+	status = "disabled";
+};
+
+/* ---- USB0: aygit modu (FEL kablosu uzerinden seri konsol + ag) ---- */
+&usbc0 {
+	usb_port_type = <0>;	/* 0: device */
+	usb_detect_type = <0>;	/* algilama yok */
+	/delete-property/ usb_id_gpio;
+	/delete-property/ usb_det_vbus_gpio;
+	status = "okay";
+};
+
+/* ---- Adim 1: SPI NOR'a erisim YOK ---- */
+&spi0 {
+	status = "disabled";
+};
+
+/*
+ * ---- F133 (D1s) icin kapatilan D1 bloklari ----
+ * sun20iw1p1.dtsi D1 icin; F133'te HDMI, EMAC/GMAC, HiFi4 DSP, TV decoder yok ya da kartta kullanilmiyor.
+ * Var olmayan bloga erisim veri yolunu kilitleyebilir (6-13. denemelerde SoC tamamen kilitleniyordu).
+ * Kamera (vin/csi/isp), deinterlace, LEDC, LRADC tus, IR, spdif ve HDMI ses de simdilik gereksiz.
+ */
+&hdmi { status = "disabled"; };
+&hdmiaudio { status = "disabled"; };
+&gmac0 { status = "disabled"; };
+&sunxi_rpaf_dsp0 { status = "disabled"; };
+&tvd { status = "disabled"; };
+&tvd0 { status = "disabled"; };
+&di { status = "disabled"; };
+&vind0 { status = "disabled"; };
+&csi0 { status = "disabled"; };
+&isp0 { status = "disabled"; };
+&isp1 { status = "disabled"; };
+&scaler0 { status = "disabled"; };
+&scaler1 { status = "disabled"; };
+&sensor0 { status = "disabled"; };
+&sensor1 { status = "disabled"; };
+&vinc0 { status = "disabled"; };
+&vinc1 { status = "disabled"; };
+&ledc { status = "disabled"; };
+&keyboard0 { status = "disabled"; };
+&s_cir0 { status = "disabled"; };
+&ir1 { status = "disabled"; };
+&soundspdif { status = "disabled"; };
+
+/*
+ * 18. deneme: kilitlenme PLIC baslatmasinin hemen ardindan (~init_IRQ/time_init). Tina'nin sun4i zamanlayicisi
+ * watchdog ile ayni blogu (0x02050000) kullaniyor ve SBI zamanlayicisindan yuksek oncelikli. Kapatilir;
+ * Linux tikleri OpenSBI'nin SBI zamanlayicisindan alir.
+ */
+&soc_timer0 {
+	status = "disabled";
+};
+
+/* 27. deneme: USB0 aygit modunda baglanti yok. USB0 PHY'si OTG'ye yonlendirilmeli (0x04100420=1, FEL'deki deger);
+ * USB0'in ana makine tarafi (EHCI0/OHCI0) kapali. */
+&ehci0 { status = "disabled"; };
+&ohci0 { status = "disabled"; };
+
+/* 34. deneme: ~9. sn'den sonra hicbir harici kesme islenmiyor (PLIC'te 22/45/57/108 bekliyor).
+ * O aralikta baslayan RTC (kaynak 160) ve cedar VE suruculeri kapatilir (ikisi de simdilik gereksiz). */
+&rtc { status = "disabled"; };
+&ve { status = "disabled"; };

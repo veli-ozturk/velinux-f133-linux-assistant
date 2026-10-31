@@ -1,0 +1,15 @@
+#!/bin/sh
+# wifitest <xtal_MHz> [guvenlik_sn]: ssv6x5x'i verilen kristal degeriyle yukler.
+# insmod takilirsa arka plandaki guvenlik zamanlayicisi watchdog reseti atar -> cihaz FEL'e doner,
+# kernel gunlugu RAM'den okunur (work\fel_wifitest_v1.py). Guc sokup takmak gerekmez.
+X=${1:-24}; T=${2:-40}
+lsmod | grep -q '^ssv6x5x' && rmmod ssv6x5x
+sed "s/^xtal_clock = .*/xtal_clock = $X/" /lib/wifi/ssv6x5x-wifi.cfg > /tmp/w$X.cfg
+echo "[wifitest] basla xtal=$X guvenlik=${T}sn" > /dev/kmsg
+( sleep $T; echo "[wifitest] insmod $T sn'de bitmedi -> watchdog reset" > /dev/kmsg; sync
+  devmem 0x020500B4 32 0x16aa0001; devmem 0x020500B8 32 0x16aa0001; devmem 0x020500B0 32 0x14af ) &
+G=$!
+insmod /lib/wifi/ssv6x5x.ko stacfgpath=/tmp/w$X.cfg; R=$?
+kill $G 2>/dev/null
+echo "[wifitest] bitti xtal=$X insmod rc=$R arayuzler: $(ls /sys/class/net | tr '\n' ' ')" > /dev/kmsg
+dmesg | sed -n '/\[wifitest\] basla/,$p' | grep -v -E 'sunxi-mmc|ep0 setup|Read efuse' | tail -60

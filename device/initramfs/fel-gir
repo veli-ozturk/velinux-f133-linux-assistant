@@ -1,0 +1,14 @@
+#!/bin/sh
+# fel-gir: SD kart OLMADAN yazilimdan FEL'e gir (11.10.2026 dogrulandi, 1 sn).
+# boot0 rtc[2] (0x07090108) == 0x5AA5A55A gorurse "eraly jump fel" -> BROM FEL. boot0 bayragi kendisi siler.
+# Sonra PC'de: work\fel_flash_boot_test_v1.py (flash'tan ac) ya da xfel ile kurtarma/yazma.
+echo "FEL'e giriliyor (RTC bayragi + watchdog)..."
+# Bilerek yapilan reset Wi-Fi guc korumasini (wifi-baslat) "cokme" sanmasin: isareti sil
+rm -f /data/.wifi-deneme
+sync
+devmem 0x07090108 32 0x5AA5A55A
+devmem 0x020500B4 32 0x16aa0001
+devmem 0x020500B8 32 0x16aa0001
+devmem 0x020500B0 32 0x14af
+sleep 5
+echo "HATA: reset gelmedi"

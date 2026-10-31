@@ -1,0 +1,35 @@
+#!/bin/sh
+# YALNIZ RAM UART aracı: MTD/SD mount yok, Wi-Fi/panel/autorun yok, otomatik ad/el sıkışma/ses komutu yok; yalnız MCU kalp cevapları.
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+mkdir -p /tmp /dev/pts /sys/kernel/config
+mount -t tmpfs tmpfs /tmp
+mount -t devpts devpts /dev/pts
+exec >/tmp/init.log 2>&1 </dev/null
+hostname bt-ad-ram
+/usr/bin/mcu-servis-v3 </dev/null >/tmp/mcu-servis.log 2>&1 &
+mount -t configfs none /sys/kernel/config
+for role in /sys/devices/platform/soc*/usbc0/otg_role /sys/devices/platform/soc*/*usbc0*/otg_role; do
+    [ -e "$role" ] && echo usb_device > "$role"
+done
+G=/sys/kernel/config/usb_gadget/f133
+mkdir -p $G/strings/0x409 $G/configs/c.1/strings/0x409 $G/functions/acm.GS0
+echo 0x1d6b > $G/idVendor
+echo 0x0104 > $G/idProduct
+echo VeLinux > $G/strings/0x409/manufacturer
+echo 'VeLinux KOLE RAM UART' > $G/strings/0x409/product
+echo 0001 > $G/strings/0x409/serialnumber
+echo ACM > $G/configs/c.1/strings/0x409/configuration
+echo 250 > $G/configs/c.1/MaxPower
+ln -s $G/functions/acm.GS0 $G/configs/c.1/
+echo "$(ls /sys/class/udc | head -1)" > $G/UDC
+(while true; do [ -e /dev/ttyGS0 ] && setsid getty -n -l /bin/sh 115200 ttyGS0; sleep 1; done) &
+echo 'BT_AD_RAM_V2: SPI nodes disabled; no SD mount, no autorun, no name/handshake/audio startup command; heartbeat service only' >/dev/kmsg
+# Kernel canlılık bekçisi; MCU kalp hizmetinden bağımsız.
+devmem 0x020500B4 32 0x16aa0001
+devmem 0x020500B8 32 0x16aa00B1
+devmem 0x020500B0 32 0x14af
+(while true; do devmem 0x020500B0 32 0x14af; sleep 4; done) &
+while true; do sleep 3600; done

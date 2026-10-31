@@ -1,0 +1,21 @@
+#!/bin/sh
+# pin-yokla <port> <no> ... : pini gecici olarak GIRIS yapip once asagi, sonra yukari cekerek okur; eski ayari geri yukler.
+# Iki durumda da ayni deger -> hat dis bir surucu tarafindan suruluyor (or. UART TX bosta = 1). Hicbir sey gondermez.
+# Ornek: pin-yokla E 4 E 5 G 13 B 7
+base() { case $1 in B) echo 1;; C) echo 2;; D) echo 3;; E) echo 4;; F) echo 5;; G) echo 6;; esac; }
+while [ $# -ge 2 ]; do
+	P=$1; N=$2; shift 2
+	B=$(( 0x02000000 + $(base $P) * 0x30 ))
+	CA=$(( B + (N / 8) * 4 )); CS=$(( (N % 8) * 4 ))
+	PA=$(( B + 0x24 + (N / 16) * 4 )); PS=$(( (N % 16) * 2 ))
+	DA=$(( B + 0x10 ))
+	C0=$(devmem $CA 32); U0=$(devmem $PA 32)
+	devmem $CA 32 $(( (C0 & ~(0xF << CS)) & 0xFFFFFFFF ))
+	devmem $PA 32 $(( ((U0 & ~(3 << PS)) | (2 << PS)) & 0xFFFFFFFF )); usleep 2000
+	ASG=$(( ($(devmem $DA 32) >> N) & 1 ))
+	devmem $PA 32 $(( ((U0 & ~(3 << PS)) | (1 << PS)) & 0xFFFFFFFF )); usleep 2000
+	YUK=$(( ($(devmem $DA 32) >> N) & 1 ))
+	devmem $PA 32 $U0; devmem $CA 32 $C0
+	if [ $ASG = $YUK ]; then S="SURULUYOR ($ASG)"; else S="bos (cekmeyi izliyor)"; fi
+	echo "P$P$N: asagi=$ASG yukari=$YUK -> $S   (eski cfg $(( (C0 >> CS) & 0xF )))"
+done

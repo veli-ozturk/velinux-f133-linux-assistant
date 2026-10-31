@@ -1,0 +1,14 @@
+#!/bin/sh
+# uart-dinle [port...] : ttyS1/ttyS3'u (fex uart1 PG12/13, uart3 PB6/7) farkli hizlarda YALNIZ DINLER (hicbir sey gondermez).
+# Her port/hiz icin 3 sn okur, gelen baytlarin hex dokumunu basar.
+P="${*:-ttyS1 ttyS3}"
+for t in $P; do
+	for b in 115200 9600 57600 38400 19200 230400 460800 921600 1500000; do
+		stty -F /dev/$t $b raw -echo -echoe -echok -ixon -ixoff -crtscts cs8 -cstopb -parenb 2>/dev/null || continue
+		timeout 3 cat /dev/$t > /tmp/ud.bin 2>/dev/null
+		n=$(wc -c < /tmp/ud.bin)
+		echo "== $t $b: $n bayt"
+		[ "$n" -gt 0 ] && hexdump -C /tmp/ud.bin | head -8
+	done
+done
+rm -f /tmp/ud.bin
