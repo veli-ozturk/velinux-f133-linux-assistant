@@ -1,0 +1,25 @@
+1110a1111,1120
+> 			adchpf_cfg = <0x01>;
+> 			pa_level = <0x01>;
+> 			pa_msleep_time = <0xa0>;
+> 			adcgain = <0x03>;
+> 			mic3gain = <0x04>;
+> 			mic2gain = <0x04>;
+> 			mic1gain = <0x04>;
+> 			headphonegain = <0x00>;
+> 			lineout_vol = <0x1a>;
+> 			digital_vol = <0x00>;
+1119c1129
+< 			status = "disabled";
+---
+> 			status = "okay";
+1135c1145
+< 			status = "disabled";
+---
+> 			status = "okay";
+1139a1150
+> 			jack_enable = <0x00>;
+1146c1157
+< 			status = "disabled";
+---
+> 			status = "okay";

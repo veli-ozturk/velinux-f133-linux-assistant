@@ -1,54 +1,140 @@
-# VeLinux KÖLE — F133 Linux home assistant
+<div align="center">
 
-Custom Linux for an Allwinner **F133 (RISC-V, 64 MB RAM)** smart-display board, turned into a voice / Telegram
-home assistant with a camera, a touch panel UI, a web dashboard and a PC "second screen" receiver.
-Everything here is the **latest version of each component** from a private working repository; personal data,
-measurement logs, vendor firmware dumps and flash backups are not included.
+<img src="go/kole-gemini/kole-logo.jpg" width="140" alt="KÖLE logo">
 
-> Türkçe açıklama aşağıda. Code comments and identifiers are mostly Turkish.
+# VeLinux KÖLE
 
-## What is in it
+**A cheap F133 smart display, rebuilt from scratch into a Linux voice & Telegram home assistant.**
 
-| Folder | Content |
-|---|---|
-| `go/kole-gemini/` | Go assistant (standard library only, static RISC-V build): Gemini Q&A and TTS, "Hey Köle" wake word, Telegram bot (menu, photos, alerts, allow-list for extra users), weather/currency/news board, health and OOM alerts |
-| `device/src/` | C services: supervisor (`kole_gozetici`), watchdog (`kole_wdt`), Telegram long-poll over BearSSL (`kole_telgraf`), HTTPS device hub + PWA (`kole_cihaz_merkez`), camera recorder / RTSP (`kamera_kayit`), PC second-screen H.264 receiver using the F133 video engine (`wifi_ekran`), MCU bridge and more |
-| `device/initramfs/` | `init` and boot helpers (Wi-Fi start with power-dip guard, FEL entry, udhcpc script) |
-| `device/sd/` | SD card scripts: `autorun_vNN.sh`, Tailscale start (small-memory build), Wi-Fi watchdog, memory tuning |
-| `panel/` | Touch panel UI application (framebuffer / G2D) |
-| `kernel/` | Kernel config, device trees, small driver overlay |
-| `patches/tailscale/` | Tailscale watchdog patch for low-memory devices |
-| `scripts/` | Reference build scripts (WSL Ubuntu 22.04, RISC-V cross toolchain); paths follow the author's layout, set `VELINUX_ROOT` |
-| `pc/` | Windows/PC tools: serial shell, install over serial, safe reboot, FEL SPI-NOR flasher (with tests), SD FEL switch, Telegram notifier |
+RISC-V · 64 MB RAM · 16 MB SPI-NOR · Linux 5.4 · Go + C · Gemini · Telegram · Tailscale
 
-## Notes
+[English](#english) · [Türkçe](#türkçe) · [Firmware & recovery](firmware/README.md) · MIT
 
-- Secrets (API keys, bot token, passwords) are never in the source: they are read at runtime from `/data/...` files
-  on the device (mode 0600).
-- Files are versioned by name (`name_vN`): a changed file installed on the device always gets a new name, so the
-  previous version stays as a fallback.
-- `pc/` tools need `pyserial` (`pip install pyserial`); the original tree vendored it under `work/serial-python-libs`.
-- This is a hobby project for one specific board; it will need adapting for other hardware.
-
-## License
-
-MIT — see [LICENSE](LICENSE). Third-party components (Linux, BearSSL, Tailscale, OpenSBI, vendor drivers) keep
-their own licenses and are not redistributed here.
+</div>
 
 ---
 
-# VeLinux KÖLE — F133 Linux ev asistanı (Türkçe)
+## English
 
-Allwinner **F133 (RISC-V, 64 MB RAM)** akıllı ekran kartı için özel Linux. Kart; sesli ve Telegram'dan
-konuşulan bir ev asistanına, kameraya, dokunmatik panele, web Merkez'e ve PC ikinci ekran alıcısına dönüştürüldü.
-Burada özel çalışma deposundaki **her bileşenin yalnız son sürümü** var; kişisel veriler, ölçüm günlükleri,
-üretici firmware dökümleri ve flash yedekleri yok.
+The board shipped with a closed Allwinner **Melis** RTOS firmware. VeLinux replaces it with a custom Linux that
+boots from the 16 MB SPI-NOR and runs a complete home assistant in about **56 MB of usable RAM**:
 
-- **Go asistan** (`go/kole-gemini`): Gemini ile soru-cevap ve seslendirme, "Hey Köle" uyandırma, Telegram botu
-  (menü, fotoğraf, uyarılar, ek kullanıcı izin listesi), hava/döviz/haber panosu, sağlık ve bellek uyarıları.
-- **C hizmetleri** (`device/src`): gözetici, bekçi köpeği, BearSSL ile Telegram, HTTPS Merkez + PWA, kamera kaydı
-  ve RTSP, donanım H.264 çözücülü PC ikinci ekran alıcısı.
-- **Açılış ve SD betikleri** (`device/`), **panel arayüzü** (`panel/`), **çekirdek ayarı** (`kernel/`),
-  **derleme betikleri** (`scripts/`, WSL; `VELINUX_ROOT` ayarlayın), **PC araçları** (`pc/`).
+- 🎙️ **"Hey Köle" voice assistant** — on-device wake word, Gemini answers, spoken replies (Gemini TTS with ElevenLabs fallback)
+- 💬 **Telegram bot** — persistent menu, camera photos, live view, alerts, multi-user allow-list, document Q&A (`/jp`)
+- 📷 **Camera** — motion alerts, recording to SD, RTSP
+- 🖥️ **PC second screen** — the PC streams H.264, the F133 **hardware video engine** decodes it
+- 🌐 **"Merkez" web hub + PWA** — HTTPS dashboard over Tailscale, reachable from anywhere (works behind CGNAT)
+- 🖐️ **Touch panel UI** — clock, weather/currency/news board, settings, 180° mounting
+- 🛡️ **Self-healing** — supervisor, hardware watchdog, Wi-Fi watchdog, OOM alerts, power-dip guard for Wi-Fi start
 
-Sırlar kaynakta yoktur; cihazda `/data/...` dosyalarından (0600) okunur. Lisans: MIT.
+### Architecture
+
+```mermaid
+flowchart LR
+  subgraph Board["F133 board (Linux 5.4, busybox)"]
+    init["init + autorun_vNN.sh"] --> sup["kole-gozetici<br/>(supervisor)"]
+    wdt["kole-wdt<br/>(watchdog)"]
+    sup --> tg["kole-telgraf<br/>C · BearSSL long-poll"]
+    tg -->|one-shot| go["kole-gemini<br/>Go assistant"]
+    sup --> hub["kole-cihaz-merkez<br/>HTTPS hub + PWA"]
+    sup --> cam["kamera-kayit<br/>motion · RTSP"]
+    sup --> scr["wifi-ekran<br/>H.264 HW decode"]
+    sup --> panel["panel UI"]
+    mcu["MCU bridge"] <-->|UART| bt["BT/audio MCU"]
+  end
+  go <--> gem["Gemini API"]
+  tg <--> tgapi["Telegram"]
+  hub <--> ts["Tailscale"] <--> phone["Phone / PC"]
+  pc["PC"] -->|H.264 over Wi-Fi| scr
+```
+
+### Hardware
+
+| | |
+|---|---|
+| SoC | Allwinner F133 (XuanTie C906 RISC-V, 64 MB DDR2 in package) |
+| Storage | 16 MB SPI-NOR, microSD |
+| Wireless | SSV6006 SDIO Wi-Fi; separate Bluetooth/audio MCU on UART |
+| I/O | touch display, camera, speaker + amplifier, USB (serial console / FEL) |
+
+### How it boots
+
+`boot0` → **TOC1 package** (OpenSBI → U-Boot bridge + DTB → Linux 5.4 → initramfs) → `init` mounts the SD card and
+runs `autorun_vNN.sh`, which starts the services through the supervisor. If anything goes wrong, an **SD FEL switch**
+puts the board into USB FEL mode for re-flashing — see [firmware/README.md](firmware/README.md).
+
+### Engineering notes
+
+Things learned the hard way, on 64 MB:
+
+- **Memory is the product.** The Telegram long-poll runs in a tiny C process (BearSSL); the Go assistant only starts
+  for each update and exits. Tailscale runs with `GOMEMLIMIT=8MiB`. zram plus careful pool sizing keep the camera,
+  hub and VPN alive together.
+- **Wi-Fi start can brown out the board.** The radio's inrush current resets the SoC on a weak supply, so Wi-Fi start
+  is guarded: a crash during start skips Wi-Fi on the next boot and retries later instead of boot-looping.
+- **The MCU has a heartbeat.** The UART MCU resets the SoC if it is not answered for ~10 s, so the bridge comes up
+  early and FEL work needs the MCU quiet.
+- **Version every file on the device.** Every installed change gets a new name (`name_vN+1`), so the previous version
+  is always one rename away.
+- **Measure before retrying.** Two failures → stop and instrument (logging uptime to SD every 0.5 s found the brown-out).
+
+### Repository layout
+
+| Folder | Content |
+|---|---|
+| [`go/kole-gemini/`](go/kole-gemini) | Go assistant (standard library only; static RISC-V build) with tests |
+| [`device/src/`](device/src) | C services: supervisor, watchdog, Telegram, HTTPS hub, camera, second screen, MCU bridge |
+| [`device/initramfs/`](device/initramfs) | `init`, Wi-Fi start/save, FEL entry, DHCP script |
+| [`device/sd/`](device/sd) | SD scripts: `autorun`, Tailscale start, Wi-Fi watchdog, memory tuning |
+| [`panel/`](panel) | Touch panel UI (framebuffer / G2D) |
+| [`kernel/`](kernel) | Kernel config, device trees, driver overlay |
+| [`patches/`](patches) | Tailscale low-memory watchdog patch |
+| [`scripts/`](scripts) | Build scripts (WSL Ubuntu 22.04 + RISC-V toolchain; set `VELINUX_ROOT`) |
+| [`pc/`](pc) | PC tools: serial shell, install over serial, reboot, FEL flasher, SD FEL switch, Telegram notifier |
+| [`firmware/`](firmware) | Flash backup, boot package, SD FEL switch, vendor dumps, Tina reference |
+
+### Getting started
+
+1. **Build** (WSL): cross toolchain for `riscv64`, then e.g. `scripts/681_build_kole_gemini_v51_v1.sh` (Go: `go test` + static build).
+2. **Install** a binary to the SD card over serial: `python pc/com_kur_v12.py <local>=<sd_name>=<sha256>` (needs `pyserial`).
+3. **Secrets** live only on the device in `/data/...` (mode 0600) — Gemini key, Telegram token, Tailscale state.
+   Nothing secret is in this repository.
+4. **Recover** a bricked board: [firmware/README.md](firmware/README.md#recovery-board-does-not-boot).
+
+Code comments and identifiers are mostly Turkish. This is a hobby project for one specific board; expect to adapt it.
+
+### By the numbers
+
+51 versions of the assistant · 65 boot scripts · ~680 build/measurement scripts · 200+ measured experiments ·
+built with a lot of help from AI coding agents.
+
+---
+
+## Türkçe
+
+Bu kart kapalı bir Allwinner **Melis** RTOS firmware'iyle geliyordu. VeLinux onun yerine 16 MB SPI-NOR'dan açılan özel
+bir Linux kuruyor ve **~56 MB kullanılabilir RAM**'de eksiksiz bir ev asistanı çalıştırıyor:
+
+- 🎙️ **"Hey Köle" sesli asistan** — cihazda uyandırma sözcüğü, Gemini cevapları, sesli yanıt (Gemini TTS, yedek ElevenLabs)
+- 💬 **Telegram botu** — kalıcı menü, kamera fotoğrafı, canlı görüntü, uyarılar, çok kullanıcılı izin listesi, belgeye soru (`/jp`)
+- 📷 **Kamera** — hareket uyarısı, SD'ye kayıt, RTSP
+- 🖥️ **PC ikinci ekran** — PC H.264 gönderir, F133'ün **donanım video motoru** çözer
+- 🌐 **Merkez web + PWA** — Tailscale üzerinden HTTPS pano, her yerden erişim (CGNAT arkasında da)
+- 🖐️ **Dokunmatik panel** — saat, hava/döviz/haber, ayarlar, 180° montaj
+- 🛡️ **Kendini toparlama** — gözetici, donanım bekçisi, Wi-Fi bekçisi, bellek uyarıları, Wi-Fi açılışında güç koruması
+
+**Açılış:** `boot0` → TOC1 paketi (OpenSBI → U-Boot köprü + DTB → Linux 5.4 → initramfs) → `init` SD'yi bağlar,
+`autorun_vNN.sh` hizmetleri gözetici ile başlatır. Kart açılmazsa **SD FEL anahtarı** ile USB'den yeniden yazılır
+([firmware/README.md](firmware/README.md)).
+
+**Öğrendiklerimiz:** 64 MB'ta bellek her şeydir (C ile Telegram, Go tek atış, Tailscale 8 MiB); zayıf adaptörde Wi-Fi
+radyosu kartı resetler, bu yüzden açılışta korunur; MCU'nun kalp atışı ~10 sn cevapsız kalırsa kartı resetler; cihazdaki
+her değişen dosya yeni sürüm adı alır; iki başarısızlıktan sonra durup ölçülür.
+
+Sırlar (API anahtarı, jeton, parola) depoda yoktur; yalnız cihazda `/data` altında (0600) durur.
+
+## License
+
+Source code: **MIT** © 2026 Veli Öztürk — see [LICENSE](LICENSE).
+Third-party components (Linux, BearSSL, Tailscale, OpenSBI, U-Boot, Allwinner SDK and the device vendor's firmware in
+[`firmware/`](firmware)) keep their own licenses and copyrights.

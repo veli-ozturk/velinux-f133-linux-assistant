@@ -1,0 +1,20 @@
+25c25
+< # CONFIG_SWAP is not set
+---
+> CONFIG_SWAP=y
+265a266
+> # CONFIG_HIBERNATION is not set
+413a415
+> # CONFIG_FRONTSWAP is not set
+420c422,424
+< # CONFIG_ZSMALLOC is not set
+---
+> CONFIG_ZSMALLOC=y
+> # CONFIG_PGTABLE_MAPPING is not set
+> # CONFIG_ZSMALLOC_STAT is not set
+645a650
+> # CONFIG_MTD_SWAP is not set
+733a739,741
+> CONFIG_ZRAM=y
+> # CONFIG_ZRAM_WRITEBACK is not set
+> # CONFIG_ZRAM_MEMORY_TRACKING is not set
