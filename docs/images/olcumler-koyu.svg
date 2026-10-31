@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="410" viewBox="0 0 900 410" font-family="-apple-system, 'Segoe UI', Ubuntu, Roboto, 'Helvetica Neue', Arial, sans-serif">
+<rect width="100%" height="100%" rx="10" fill="#1a1a19"/>
+<text x="20" y="32" font-size="18" font-weight="600" fill="#f0efec">Ölçülen iyileştirmeler</text>
+<rect x="20" y="46" width="12" height="12" rx="3" fill="#3987e5"/>
+<text x="38" y="56" font-size="12" fill="#c3c2b7">önce</text>
+<rect x="84" y="46" width="12" height="12" rx="3" fill="#d95926"/>
+<text x="102" y="56" font-size="12" fill="#c3c2b7">sonra</text>
+<text x="880" y="56" font-size="12" text-anchor="end" fill="#8a8984">kaynak: ölçüm günlüğü (measurement log)</text>
+<text x="20" y="90" font-size="14" font-weight="600" fill="#f0efec">İkinci ekran kare hızı</text>
+<text x="20" y="108" font-size="12" fill="#c3c2b7">kare/sn · yukarı daha iyi · 2,9 kat</text>
+<text x="20" y="126" font-size="12" fill="#c3c2b7">önce</text>
+<path d="M20.0 132 h121.5 a4 4 0 0 1 4 4 v12 a4 4 0 0 1 -4 4 h-121.5 z" fill="#3987e5"/>
+<text x="153.5" y="147" font-size="13" font-weight="600" fill="#f0efec">6,9</text>
+<text x="20" y="172" font-size="12" fill="#c3c2b7">bellek_ayar + K1 havuz</text>
+<path d="M20.0 178 h356.0 a4 4 0 0 1 4 4 v12 a4 4 0 0 1 -4 4 h-356.0 z" fill="#d95926"/>
+<text x="388.0" y="193" font-size="13" font-weight="600" fill="#f0efec">19,8</text>
+<line x1="20" y1="130" x2="20" y2="218" stroke="#2e2e2c" stroke-width="1"/>
+<text x="470" y="90" font-size="14" font-weight="600" fill="#f0efec">Cihaz boşta CPU (PC Merkez açık)</text>
+<text x="470" y="108" font-size="12" fill="#c3c2b7">% boşta · yukarı daha iyi · 2,5 kat</text>
+<text x="470" y="126" font-size="12" fill="#c3c2b7">v6: her istekte TLS</text>
+<path d="M470.0 132 h142.5 a4 4 0 0 1 4 4 v12 a4 4 0 0 1 -4 4 h-142.5 z" fill="#3987e5"/>
+<text x="624.5" y="147" font-size="13" font-weight="600" fill="#f0efec">35</text>
+<text x="470" y="172" font-size="12" fill="#c3c2b7">v8: açık bağlantı</text>
+<path d="M470.0 178 h356.0 a4 4 0 0 1 4 4 v12 a4 4 0 0 1 -4 4 h-356.0 z" fill="#d95926"/>
+<text x="838.0" y="193" font-size="13" font-weight="600" fill="#f0efec">86</text>
+<line x1="470" y1="130" x2="470" y2="218" stroke="#2e2e2c" stroke-width="1"/>
+<text x="20" y="260" font-size="14" font-weight="600" fill="#f0efec">Açılış: init süresi</text>
+<text x="20" y="278" font-size="12" fill="#c3c2b7">sn · aşağı daha iyi · 7,8 kat</text>
+<text x="20" y="296" font-size="12" fill="#c3c2b7">önbellek kapalı</text>
+<path d="M20.0 302 h356.0 a4 4 0 0 1 4 4 v12 a4 4 0 0 1 -4 4 h-356.0 z" fill="#3987e5"/>
+<text x="388.0" y="317" font-size="13" font-weight="600" fill="#f0efec">12,5</text>
+<text x="20" y="342" font-size="12" fill="#c3c2b7">C906 D-cache açık</text>
+<path d="M20.0 348 h42.1 a4 4 0 0 1 4 4 v12 a4 4 0 0 1 -4 4 h-42.1 z" fill="#d95926"/>
+<text x="74.1" y="363" font-size="13" font-weight="600" fill="#f0efec">1,6</text>
+<line x1="20" y1="300" x2="20" y2="388" stroke="#2e2e2c" stroke-width="1"/>
+<text x="470" y="260" font-size="14" font-weight="600" fill="#f0efec">Takastan okuma (PC Merkez açık)</text>
+<text x="470" y="278" font-size="12" fill="#c3c2b7">sayfa/sn · aşağı daha iyi · 6 kat</text>
+<text x="470" y="296" font-size="12" fill="#c3c2b7">v6</text>
+<path d="M470.0 302 h356.0 a4 4 0 0 1 4 4 v12 a4 4 0 0 1 -4 4 h-356.0 z" fill="#3987e5"/>
+<text x="838.0" y="317" font-size="13" font-weight="600" fill="#f0efec">322</text>
+<text x="470" y="342" font-size="12" fill="#c3c2b7">v8</text>
+<path d="M470.0 348 h56.4 a4 4 0 0 1 4 4 v12 a4 4 0 0 1 -4 4 h-56.4 z" fill="#d95926"/>
+<text x="538.4" y="363" font-size="13" font-weight="600" fill="#f0efec">54</text>
+<line x1="470" y1="300" x2="470" y2="388" stroke="#2e2e2c" stroke-width="1"/>
+</svg>

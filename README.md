@@ -8,7 +8,11 @@
 
 RISC-V · 64 MB RAM · 16 MB SPI-NOR · Linux 5.4 · Go + C · Gemini · Telegram · Tailscale
 
-[English](#english) · [Türkçe](#türkçe) · [Firmware & recovery](firmware/README.md) · MIT
+[English](#english) · [Türkçe](#türkçe) · [Screenshots](#screenshots) · [Firmware & recovery](firmware/README.md) · MIT
+
+<br>
+
+<img src="docs/images/panel-pano.png" width="900" alt="Touch panel home screen: clock, weather, currency, device status">
 
 </div>
 
@@ -102,6 +106,47 @@ Things learned the hard way, on 64 MB:
 4. **Recover** a bricked board: [firmware/README.md](firmware/README.md#recovery-board-does-not-boot).
 
 Code comments and identifiers are mostly Turkish. This is a hobby project for one specific board; expect to adapt it.
+
+### Measured improvements
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/olcumler-koyu.svg">
+  <img src="docs/images/olcumler-acik.svg" width="900" alt="Measured improvements: second screen 6.9 → 19.8 fps, idle CPU 35% → 86%, init time 7.8× faster">
+</picture>
+
+### Screenshots
+
+**Touch panel** — themes, tabs and settings (1200×450 panel)
+
+<p align="center">
+  <img src="docs/images/panel-tema-mavi.png" width="440" alt="Blue theme">
+  <img src="docs/images/panel-tema-beyaz.png" width="440" alt="White theme"><br>
+  <img src="docs/images/panel-medya.png" width="440" alt="Media tab: PC media and Bluetooth phone">
+  <img src="docs/images/panel-kisayollar.png" width="440" alt="Shortcuts tab"><br>
+  <img src="docs/images/panel-asistan.png" width="440" alt="Assistant tab: ask Gemini">
+  <img src="docs/images/panel-zamanlayici.png" width="440" alt="Timer tab"><br>
+  <img src="docs/images/panel-notlar.png" width="440" alt="Notes tab">
+  <img src="docs/images/panel-monitor.png" width="440" alt="Monitor tab: CPU and memory"><br>
+  <img src="docs/images/panel-pcsistem.png" width="440" alt="PC System tab: live PC stats">
+  <img src="docs/images/panel-pc.png" width="440" alt="PC Screen tab: second screen receiver"><br>
+  <img src="docs/images/panel-gizlilik.png" width="440" alt="Privacy tab">
+  <img src="docs/images/panel-ayarlar.png" width="440" alt="Settings, display"><br>
+  <img src="docs/images/panel-ayar-sistem.png" width="440" alt="Settings, system and services">
+  <img src="docs/images/panel-denetim-merkezi.png" width="440" alt="Control center"><br>
+  <img src="docs/images/panel-koruyucular.png" width="900" alt="Screen savers">
+</p>
+
+**Merkez PWA** — the phone app over Tailscale: login, home, time-lapse, more menu
+
+<p align="center"><img src="docs/images/merkez-pwa.png" width="900" alt="Merkez PWA screens"></p>
+
+**PC Merkez** — Windows companion app: device status, time-lapse player, features
+
+<p align="center">
+  <img src="docs/images/pc-merkez-v8-genel.png" width="880" alt="PC Merkez: device status"><br>
+  <img src="docs/images/pc-merkez-v8-timelapse.png" width="440" alt="PC Merkez: time-lapse">
+  <img src="docs/images/pc-merkez-v8-ozellikler.png" width="440" alt="PC Merkez: features">
+</p>
 
 ### By the numbers
 
